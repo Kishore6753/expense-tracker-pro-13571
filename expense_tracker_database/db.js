@@ -102,6 +102,7 @@
     * - Opens DB connection
     * - Applies schema (using exec to support multi-statement SQL)
     * - Seeds default categories from ENV if categories table is empty
+    * - Ensures canonical required categories are present (adds only missing)
     */
    const dbPath = DEFAULT_DB_PATH;
    await ensureDirExists(dbPath);
@@ -129,6 +130,9 @@
    // Seed default categories if not present (after schema is guaranteed present)
    await seedDefaultCategories(db);
 
+   // Ensure the canonical required categories exist even if table already has entries
+   await ensureRequiredCategories(db);
+
    // Keep a singleton db connection
    module.exports._db = db;
    return db;
@@ -138,7 +142,7 @@
  async function seedDefaultCategories(db) {
    /**
     * Seed default categories from environment variable EXPENSE_DEFAULT_CATEGORIES
-    * or the standardized list required by the project.
+    * or the standardized list required by the project when the table is empty.
     * Defensive: verify categories table exists before attempting SELECT/INSERT.
     */
    // Verify categories table existence (should exist after init schema)
@@ -164,7 +168,7 @@
      'Education',
      'Personal Care',
      'Other/Miscellaneous',
-     // Added additional categories requested
+     // Additional optional categories (kept for flexibility; will be deduped by INSERT OR IGNORE)
      'Books',
      'Gifts',
      'Subscriptions',
@@ -181,6 +185,37 @@
    await run(db, 'BEGIN;');
    try {
      for (const name of envList) {
+       await run(db, 'INSERT OR IGNORE INTO categories (name) VALUES (?);', [name]);
+     }
+     await run(db, 'COMMIT;');
+   } catch (e) {
+     await run(db, 'ROLLBACK;').catch(() => {});
+     throw e;
+   }
+ }
+
+ /**
+  * PUBLIC_INTERFACE
+  * Ensure the standard required categories exist in the database.
+  * Inserts only missing entries; does not remove or overwrite existing rows.
+  */
+ async function ensureRequiredCategories(db) {
+   const required = [
+     'Food & Groceries',
+     'Transport/Travel',
+     'Bills & Utilities',
+     'Shopping',
+     'Health & Fitness',
+     'Entertainment',
+     'Education',
+     'Personal Care',
+     'Other/Miscellaneous',
+   ];
+
+   await run(db, 'BEGIN;');
+   try {
+     for (const name of required) {
+       // INSERT OR IGNORE avoids duplicates and preserves existing rows
        await run(db, 'INSERT OR IGNORE INTO categories (name) VALUES (?);', [name]);
      }
      await run(db, 'COMMIT;');
