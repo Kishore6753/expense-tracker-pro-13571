@@ -24,6 +24,10 @@ Key Endpoints:
 - GET /api/categories
 - POST /api/categories
 
+Default Categories:
+- Food & Groceries, Transport/Travel, Bills & Utilities, Shopping, Health & Fitness, Entertainment, Education, Personal Care, Other/Miscellaneous
+- You can override the default list via backend env: EXPENSE_DEFAULT_CATEGORIES (comma-separated).
+
 Supabase (optional):
 - See assets/supabase.md for configuration, RLS policies, and auth callback details.
 - Frontend expects REACT_APP_SUPABASE_URL, REACT_APP_SUPABASE_KEY if you enable auth.

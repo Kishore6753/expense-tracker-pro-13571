@@ -24,7 +24,7 @@ Create/update your backend `.env` file with:
 EXPENSE_DB_PATH=./data/expense_tracker.db
 
 # Optional: default categories seeded on init (comma-separated)
-EXPENSE_DEFAULT_CATEGORIES=Food,Travel,Utilities,Entertainment,Health,Education,Other
+EXPENSE_DEFAULT_CATEGORIES=Food & Groceries,Transport/Travel,Bills & Utilities,Shopping,Health & Fitness,Entertainment,Education,Personal Care,Other/Miscellaneous
 ```
 
 Note: Do not commit secrets into version control. For local development, the backend will create the DB file and seed default categories if not present.
