@@ -1,4 +1,4 @@
- /**
+ /** 
   * SQLite database helper for Expense Tracker
   *
   * Provides initialization, schema management, and query helpers supporting:
@@ -10,26 +10,34 @@
 
  const fs = require('fs');
  const path = require('path');
- // Robustly resolve sqlite3 in a monorepo: try local require first, then fallback to backend/node_modules
+
+ // Robust sqlite3 resolution for monorepo and cross-folder setups.
+ // Try normal require first; if that fails, attempt known node_modules locations.
  let sqlite3Lib;
  try {
-   // Primary: resolve from current module resolution (expected if sqlite3 installed at repo root or same package)
    // eslint-disable-next-line global-require
    sqlite3Lib = require('sqlite3');
- } catch (e) {
-   try {
-     // Fallback 1: resolve from sibling backend node_modules (monorepo layout)
-     // eslint-disable-next-line global-require
-     sqlite3Lib = require(path.resolve(__dirname, '..', 'expense_tracker_backend', 'node_modules', 'sqlite3'));
-   } catch (e2) {
+ } catch (e1) {
+   const candidates = [
+     // Backend container node_modules
+     path.resolve(__dirname, '..', 'expense_tracker_backend', 'node_modules', 'sqlite3'),
+     // Workspace root node_modules
+     path.resolve(__dirname, '..', 'node_modules', 'sqlite3'),
+   ];
+   let loaded = false;
+   for (const candidate of candidates) {
      try {
-       // Fallback 2: resolve from workspace root node_modules if present
-       // eslint-disable-next-line global-require
-       sqlite3Lib = require(path.resolve(__dirname, '..', 'node_modules', 'sqlite3'));
-     } catch (e3) {
-       // Re-throw original error to make failure explicit
-       throw e;
+       // eslint-disable-next-line global-require, import/no-dynamic-require
+       sqlite3Lib = require(candidate);
+       loaded = true;
+       break;
+     } catch (_) {
+       // try next
      }
+   }
+   if (!loaded) {
+     // If none worked, rethrow original error for clear diagnostics
+     throw e1;
    }
  }
  const sqlite3 = sqlite3Lib.verbose();
@@ -120,12 +128,16 @@
    return db;
  }
 
- // Seed default categories from env or standardized fallback list
+ // PUBLIC_INTERFACE
  async function seedDefaultCategories(db) {
+   /**
+    * Seed default categories from environment variable EXPENSE_DEFAULT_CATEGORIES
+    * or the standardized list required by the project.
+    */
    const row = await get(db, 'SELECT COUNT(*) AS cnt FROM categories;');
    if (row && row.cnt > 0) return;
 
-   // Standardized default categories per task requirements
+   // Standardized default categories per README
    const defaultList = [
      'Food & Groceries',
      'Transport/Travel',
@@ -140,7 +152,7 @@
 
    const envList = (process.env.EXPENSE_DEFAULT_CATEGORIES || defaultList.join(','))
      .split(',')
-     .map(s => s.trim())
+     .map((s) => s.trim())
      .filter(Boolean);
 
    await run(db, 'BEGIN;');
@@ -207,14 +219,16 @@
    limit = 50,
    offset = 0,
    sortBy = 'created_at', // created_at|amount
-   sortDir = 'DESC',      // ASC|DESC
+   sortDir = 'DESC', // ASC|DESC
  } = {}) {
    /** Lists expenses with filtering, pagination, and sorting. */
    const db = await dbInstance();
    const allowedSortBy = ['created_at', 'amount'];
    const allowedSortDir = ['ASC', 'DESC'];
    const orderBy = allowedSortBy.includes(sortBy) ? sortBy : 'created_at';
-   const orderDir = allowedSortDir.includes(String(sortDir).toUpperCase()) ? String(sortDir).toUpperCase() : 'DESC';
+   const orderDir = allowedSortDir.includes(String(sortDir).toUpperCase())
+     ? String(sortDir).toUpperCase()
+     : 'DESC';
 
    const params = [categoryId, categoryId, startDate, startDate, endDate, endDate];
    let sql = `
@@ -266,10 +280,22 @@
    const fields = [];
    const params = [];
 
-   if (amount != null) { fields.push('amount = ?'); params.push(Number(amount)); }
-   if (categoryId != null) { fields.push('category_id = ?'); params.push(categoryId); }
-   if (notes != null) { fields.push('notes = ?'); params.push(notes); }
-   if (createdAt != null) { fields.push('created_at = ?'); params.push(createdAt); }
+   if (amount != null) {
+     fields.push('amount = ?');
+     params.push(Number(amount));
+   }
+   if (categoryId != null) {
+     fields.push('category_id = ?');
+     params.push(categoryId);
+   }
+   if (notes != null) {
+     fields.push('notes = ?');
+     params.push(notes);
+   }
+   if (createdAt != null) {
+     fields.push('created_at = ?');
+     params.push(createdAt);
+   }
 
    if (fields.length === 0) {
      return get(db, 'SELECT * FROM expenses WHERE id = ?;', [id]);
@@ -313,7 +339,9 @@
     * Columns: ID,Amount,Category,Notes,Created At
     */
    const rows = await listExpenses({
-     startDate, endDate, categoryId,
+     startDate,
+     endDate,
+     categoryId,
      // Use full export defaults
      limit: 1000000,
      offset: 0,
@@ -324,7 +352,7 @@
    const escapeCsv = (v) => {
      if (v == null) return '';
      const s = String(v);
-     if (/[",\n]/.test(s)) {
+     if (/["\n]/.test(s)) {
        return `"${s.replace(/"/g, '""')}"`;
      }
      return s;
@@ -333,13 +361,15 @@
    const headers = ['ID', 'Amount', 'Category', 'Notes', 'Created At'];
    const lines = [headers.join(',')];
    for (const r of rows) {
-     lines.push([
-       escapeCsv(r.id),
-       escapeCsv(r.amount),
-       escapeCsv(r.category_name || ''),
-       escapeCsv(r.notes || ''),
-       escapeCsv(r.created_at),
-     ].join(','));
+     lines.push(
+       [
+         escapeCsv(r.id),
+         escapeCsv(r.amount),
+         escapeCsv(r.category_name || ''),
+         escapeCsv(r.notes || ''),
+         escapeCsv(r.created_at),
+       ].join(',')
+     );
    }
    return lines.join('\n');
  }
