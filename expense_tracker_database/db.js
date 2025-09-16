@@ -10,7 +10,29 @@
 
  const fs = require('fs');
  const path = require('path');
- const sqlite3 = require('sqlite3').verbose();
+ // Robustly resolve sqlite3 in a monorepo: try local require first, then fallback to backend/node_modules
+ let sqlite3Lib;
+ try {
+   // Primary: resolve from current module resolution (expected if sqlite3 installed at repo root or same package)
+   // eslint-disable-next-line global-require
+   sqlite3Lib = require('sqlite3');
+ } catch (e) {
+   try {
+     // Fallback 1: resolve from sibling backend node_modules (monorepo layout)
+     // eslint-disable-next-line global-require
+     sqlite3Lib = require(path.resolve(__dirname, '..', 'expense_tracker_backend', 'node_modules', 'sqlite3'));
+   } catch (e2) {
+     try {
+       // Fallback 2: resolve from workspace root node_modules if present
+       // eslint-disable-next-line global-require
+       sqlite3Lib = require(path.resolve(__dirname, '..', 'node_modules', 'sqlite3'));
+     } catch (e3) {
+       // Re-throw original error to make failure explicit
+       throw e;
+     }
+   }
+ }
+ const sqlite3 = sqlite3Lib.verbose();
 
  const DEFAULT_DB_PATH = process.env.EXPENSE_DB_PATH || path.join(__dirname, '..', 'data', 'expense_tracker.db');
 
