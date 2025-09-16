@@ -3,6 +3,7 @@
 Expense Tracker project with:
 - Backend: Express API (expense_tracker_backend)
 - SQLite database helper (expense_tracker_database)
+- Optional Supabase integration for authentication and multi-tenant storage
 
 Quick start (backend):
 1. cd expense-tracker-pro-13571/expense_tracker_backend
@@ -22,3 +23,7 @@ Key Endpoints:
 - GET /api/chart-data
 - GET /api/categories
 - POST /api/categories
+
+Supabase (optional):
+- See assets/supabase.md for configuration, RLS policies, and auth callback details.
+- Frontend expects REACT_APP_SUPABASE_URL, REACT_APP_SUPABASE_KEY if you enable auth.
