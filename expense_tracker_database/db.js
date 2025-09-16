@@ -164,6 +164,13 @@
      'Education',
      'Personal Care',
      'Other/Miscellaneous',
+     // Added additional categories requested
+     'Books',
+     'Gifts',
+     'Subscriptions',
+     'Charity',
+     'Travel',
+     'Pets',
    ];
 
    const envList = (process.env.EXPENSE_DEFAULT_CATEGORIES || defaultList.join(','))
