@@ -100,7 +100,7 @@
     * Initialize the SQLite database:
     * - Creates directories if needed
     * - Opens DB connection
-    * - Applies schema
+    * - Applies schema (using exec to support multi-statement SQL)
     * - Seeds default categories from ENV if categories table is empty
     */
    const dbPath = DEFAULT_DB_PATH;
@@ -108,19 +108,25 @@
 
    const db = await openDb(dbPath);
 
-   // Apply schema
+   // Apply schema (schema.sql contains multiple statements; use db.exec)
    const schemaPath = path.join(__dirname, 'schema.sql');
    const schema = await readFile(schemaPath);
+
+   // Wrap in transaction for atomic schema application
    await run(db, 'BEGIN;');
    try {
-     await run(db, schema);
+     // sqlite3 Database#run cannot execute multiple statements separated by semicolons.
+     // Use db.exec for multi-statement scripts like schema.sql.
+     await new Promise((resolve, reject) => {
+       db.exec(schema, (err) => (err ? reject(err) : resolve()));
+     });
      await run(db, 'COMMIT;');
    } catch (e) {
      await run(db, 'ROLLBACK;').catch(() => {});
      throw e;
    }
 
-   // Seed default categories if not present
+   // Seed default categories if not present (after schema is guaranteed present)
    await seedDefaultCategories(db);
 
    // Keep a singleton db connection
@@ -133,7 +139,17 @@
    /**
     * Seed default categories from environment variable EXPENSE_DEFAULT_CATEGORIES
     * or the standardized list required by the project.
+    * Defensive: verify categories table exists before attempting SELECT/INSERT.
     */
+   // Verify categories table existence (should exist after init schema)
+   const tbl = await get(
+     db,
+     "SELECT name FROM sqlite_master WHERE type='table' AND name='categories';"
+   );
+   if (!tbl) {
+     throw new Error("Database schema not initialized: 'categories' table missing prior to seeding");
+   }
+
    const row = await get(db, 'SELECT COUNT(*) AS cnt FROM categories;');
    if (row && row.cnt > 0) return;
 
@@ -170,6 +186,7 @@
  // Resolve db instance
  async function dbInstance() {
    if (module.exports._db) return module.exports._db;
+   // Ensure init runs before any consumer query
    return init();
  }
 
