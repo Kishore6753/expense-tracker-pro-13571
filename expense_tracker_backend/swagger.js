@@ -4,10 +4,15 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'My Express API',
+      title: 'Expense Tracker API',
       version: '1.0.0',
-      description: 'A simple Express API documented with Swagger',
-    }
+      description: 'REST API for managing expenses, categories, summaries, CSV export, and chart data.',
+    },
+    tags: [
+      { name: 'Expenses', description: 'Manage expenses' },
+      { name: 'Summaries', description: 'Summary and analytics for expenses' },
+      { name: 'Categories', description: 'Manage categories' },
+    ],
   },
   apis: ['./src/routes/*.js'], // Path to the API docs
 };

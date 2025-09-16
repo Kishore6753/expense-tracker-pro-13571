@@ -1,7 +1,7 @@
 {
-    "name": "minimal-express-app",
+    "name": "expense-tracker-backend",
     "version": "1.0.0",
-    "description": "Minimal Express app with scalable structure",
+    "description": "Expense Tracker Express API with SQLite database for expenses, summaries, CSV export, and chart data.",
     "main": "src/server.js",
     "scripts": {
         "start": "node src/server.js",
