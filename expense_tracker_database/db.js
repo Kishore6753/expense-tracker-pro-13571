@@ -157,8 +157,8 @@
    const row = await get(db, 'SELECT COUNT(*) AS cnt FROM categories;');
    if (row && row.cnt > 0) return;
 
-   // Standardized default categories per README
-   const defaultList = [
+   // Standardized default categories per README and task requirements
+   const requiredDefault = [
      'Food & Groceries',
      'Transport/Travel',
      'Bills & Utilities',
@@ -168,16 +168,10 @@
      'Education',
      'Personal Care',
      'Other/Miscellaneous',
-     // Additional optional categories (kept for flexibility; will be deduped by INSERT OR IGNORE)
-     'Books',
-     'Gifts',
-     'Subscriptions',
-     'Charity',
-     'Travel',
-     'Pets',
    ];
 
-   const envList = (process.env.EXPENSE_DEFAULT_CATEGORIES || defaultList.join(','))
+   // Allow override via ENV; otherwise use required list exactly
+   const envList = (process.env.EXPENSE_DEFAULT_CATEGORIES || requiredDefault.join(','))
      .split(',')
      .map((s) => s.trim())
      .filter(Boolean);
