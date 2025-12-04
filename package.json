@@ -1,0 +1,32 @@
+{
+  "name": "expense-tracker-pro-13571",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal backend server scaffolding for Expense Tracker (preview-ready on port 3001).",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "NODE_ENV=development nodemon --watch src --ext js,json --exec \"node src/server.js\"",
+    "build": "echo \"No build step required for pure Node.js server\""
+  },
+  "keywords": [
+    "expense-tracker",
+    "backend",
+    "node"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
